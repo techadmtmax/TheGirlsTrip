@@ -1,0 +1,2755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voyage · 여행 플래너</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Fraunces:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --cream: #F5EFE5;
+    --cream-deep: #EDE4D3;
+    --paper: #FCF9F3;
+    --ink: #2A2520;
+    --ink-soft: #5C544A;
+    --ink-faint: #8C8377;
+    --terracotta: #C66B5B;
+    --terracotta-deep: #A85542;
+    --sage: #7A8B6F;
+    --sage-deep: #5C6E54;
+    --gold: #C99A5C;
+    --rose: #D4A5A0;
+    --line: #E0D6C5;
+    --line-soft: #ECE3D2;
+    --shadow-sm: 0 1px 2px rgba(60, 45, 30, 0.04), 0 2px 8px rgba(60, 45, 30, 0.04);
+    --shadow-md: 0 4px 12px rgba(60, 45, 30, 0.06), 0 12px 32px rgba(60, 45, 30, 0.05);
+    --shadow-lg: 0 8px 24px rgba(60, 45, 30, 0.08), 0 24px 64px rgba(60, 45, 30, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(198, 107, 91, 0.06), transparent 40%),
+      radial-gradient(circle at 85% 70%, rgba(122, 139, 111, 0.05), transparent 45%);
+    background-attachment: fixed;
+  }
+
+  .app {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+  }
+
+  /* === HEADER === */
+  .masthead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 22px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .brand-mark {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 38px;
+    color: var(--terracotta);
+    letter-spacing: -0.02em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
+  .meta-line {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .meta-dot { width: 4px; height: 4px; background: var(--gold); border-radius: 50%; }
+
+  /* === TRIP HERO === */
+  .hero {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 32px 36px;
+    margin-bottom: 28px;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 12px; left: 12px; right: 12px; bottom: 12px;
+    border: 1px solid var(--line-soft);
+    pointer-events: none;
+    border-radius: 2px;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr 0.8fr;
+    gap: 28px;
+    align-items: end;
+    position: relative;
+    z-index: 1;
+  }
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+  }
+
+  .hero-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+  }
+  .hero-field input,
+  .hero-field select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    border-bottom: 1px solid var(--line);
+    padding: 4px 0 8px;
+    font-family: inherit;
+    color: var(--ink);
+    font-size: 17px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .hero-field input:focus,
+  .hero-field select:focus { border-color: var(--terracotta); }
+  .hero-field.title input {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .hero-field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238C8377' stroke-width='1.2' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    padding-right: 18px;
+    cursor: pointer;
+  }
+
+  /* === TABS === */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .tab {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 12px 20px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    position: relative;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+  .tab:hover { color: var(--ink-soft); }
+  .tab.active { color: var(--ink); }
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--terracotta);
+  }
+  .tab .tab-num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--gold);
+    margin-right: 8px;
+    font-size: 13px;
+  }
+
+  /* === PANEL === */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade 0.4s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .section-title {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .section-title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--terracotta);
+  }
+  .section-sub {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-bottom: 24px;
+    letter-spacing: 0.02em;
+  }
+
+  /* === OVERVIEW === */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 22px;
+  }
+  @media (max-width: 900px) { .overview-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 26px 28px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 700px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .stat {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 18px 20px;
+    border-radius: 4px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .stat-unit {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-faint);
+    margin-left: 4px;
+  }
+  .stat-foot {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+  }
+
+  /* progress bar */
+  .progress-block {
+    margin-bottom: 18px;
+  }
+  .progress-block:last-child { margin-bottom: 0; }
+  .progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .progress-name { color: var(--ink); font-weight: 500; }
+  .progress-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .progress-bar {
+    height: 6px;
+    background: var(--cream-deep);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--terracotta);
+    transition: width 0.4s ease;
+  }
+  .progress-fill.over { background: #B85745; }
+
+  /* === ITINERARY === */
+  .day-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .day-pill {
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: 100px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink-soft);
+    transition: all 0.2s;
+  }
+  .day-pill:hover { border-color: var(--terracotta); color: var(--ink); }
+  .day-pill.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .day-pill.add {
+    border-style: dashed;
+    color: var(--ink-faint);
+  }
+
+  .day-content {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 28px 32px;
+    box-shadow: var(--shadow-sm);
+  }
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .day-title {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .day-title em {
+    font-style: italic;
+    color: var(--terracotta);
+    font-weight: 400;
+  }
+  .day-date {
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+  }
+
+  .activity {
+    display: grid;
+    grid-template-columns: 70px 1fr 130px 80px 90px 32px;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px dashed var(--line-soft);
+  }
+  .activity:last-child { border-bottom: none; }
+  @media (max-width: 700px) {
+    .activity {
+      grid-template-columns: 60px 1fr 70px 32px;
+      grid-template-areas:
+        "time name name del"
+        "time place place place"
+        "time cat  cost cost";
+      gap: 6px 10px;
+    }
+    .activity .a-time { grid-area: time; }
+    .activity .a-name { grid-area: name; }
+    .activity .a-place { grid-area: place; }
+    .activity .a-cat { grid-area: cat; }
+    .activity .a-cost { grid-area: cost; }
+    .activity .a-del { grid-area: del; }
+  }
+  .activity input,
+  .activity select {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 4px 0;
+    outline: none;
+    width: 100%;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .activity input:focus,
+  .activity select:focus { border-bottom-color: var(--line); }
+  .activity input:hover:not(:focus),
+  .activity select:hover:not(:focus) { border-bottom-color: var(--line-soft); }
+  .activity .a-time input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--terracotta);
+    font-weight: 500;
+  }
+  .activity .a-name input {
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .activity .a-place input {
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+  .activity .a-cat select {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-soft);
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238C8377' stroke-width='1.2' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 2px center;
+    padding-right: 14px;
+  }
+  .activity .a-cost input {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+  .icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--ink-faint);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover {
+    color: var(--terracotta);
+    background: var(--cream);
+    border-color: var(--line);
+  }
+
+  .add-activity {
+    margin-top: 16px;
+    background: none;
+    border: 1px dashed var(--line);
+    color: var(--ink-faint);
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .add-activity:hover {
+    border-color: var(--terracotta);
+    color: var(--terracotta);
+    background: var(--paper);
+  }
+
+  /* === BUDGET === */
+  .budget-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 22px;
+  }
+  @media (max-width: 900px) { .budget-grid { grid-template-columns: 1fr; } }
+
+  .budget-cat {
+    display: grid;
+    grid-template-columns: 32px 1fr 140px 140px 36px;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px dashed var(--line-soft);
+  }
+  .budget-cat:last-child { border-bottom: none; }
+  @media (max-width: 700px) {
+    .budget-cat {
+      grid-template-columns: 32px 1fr 36px;
+      grid-template-areas: "icon name del" "icon plan plan" "icon actual actual";
+      gap: 8px 14px;
+    }
+    .budget-cat .b-icon { grid-area: icon; }
+    .budget-cat .b-name { grid-area: name; }
+    .budget-cat .b-plan { grid-area: plan; }
+    .budget-cat .b-actual { grid-area: actual; }
+    .budget-cat .b-del { grid-area: del; }
+  }
+  .budget-cat .b-icon {
+    width: 32px; height: 32px;
+    background: var(--cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .budget-cat input {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 6px 0;
+    outline: none;
+    width: 100%;
+    border-bottom: 1px solid var(--line-soft);
+    transition: border-color 0.2s;
+  }
+  .budget-cat input:focus { border-color: var(--terracotta); }
+  .budget-cat .b-name input { font-weight: 500; border-bottom-color: transparent; }
+  .budget-cat .b-name input:hover { border-bottom-color: var(--line-soft); }
+  .budget-cat .b-name input:focus { border-bottom-color: var(--terracotta); }
+  .budget-cat .currency-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .currency-input input {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding-right: 4px;
+  }
+  .currency-input .label {
+    position: absolute;
+    left: 0;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    top: -10px;
+  }
+  .currency-input.actual input { color: var(--sage-deep); }
+
+  .budget-summary {
+    background: linear-gradient(135deg, #2A2520 0%, #3D362E 100%);
+    color: var(--paper);
+    border-radius: 4px;
+    padding: 32px 32px 28px;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 20px;
+  }
+  .budget-summary h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .budget-summary h3 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold);
+  }
+  .summary-sub {
+    font-size: 11px;
+    color: rgba(245, 239, 229, 0.5);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .summary-block { margin-bottom: 22px; }
+  .summary-block:last-child { margin-bottom: 0; }
+  .summary-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245, 239, 229, 0.55);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .summary-value {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .summary-value .small {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    color: rgba(245, 239, 229, 0.6);
+    margin-left: 6px;
+    font-weight: 400;
+  }
+  .summary-value.gold { color: var(--gold); }
+  .summary-value.sage { color: #B5C9A8; }
+  .summary-value.over { color: #E8927E; }
+
+  .summary-divider {
+    height: 1px;
+    background: rgba(245, 239, 229, 0.12);
+    margin: 22px 0;
+  }
+  .per-person {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(245, 239, 229, 0.12);
+  }
+  .per-person .summary-value { font-size: 22px; }
+  .per-person .summary-label { font-size: 9px; }
+
+  /* === MAP === */
+  .map-controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .map-info {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .map-info b {
+    color: var(--terracotta);
+    font-weight: 600;
+  }
+  #map {
+    height: 560px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-md);
+    background: var(--cream);
+    z-index: 1;
+  }
+  @media (max-width: 700px) { #map { height: 420px; } }
+
+  .leaflet-container {
+    font-family: 'Noto Sans KR', sans-serif !important;
+    background: #f4ede0 !important;
+  }
+  .marker-popup {
+    font-family: 'Noto Sans KR', sans-serif;
+    min-width: 180px;
+  }
+  .marker-popup h4 {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  .marker-popup .day-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--terracotta);
+    color: white;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .marker-popup .place-info {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+
+  /* Marker styling */
+  .num-marker {
+    background: var(--terracotta);
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 14px;
+    border: 3px solid var(--paper);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+
+  /* small chip style buttons */
+  .chip-btn {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 100px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip-btn:hover {
+    border-color: var(--terracotta);
+    color: var(--terracotta);
+  }
+  .chip-btn.primary {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .chip-btn.primary:hover {
+    background: var(--terracotta);
+    border-color: var(--terracotta);
+    color: white;
+  }
+
+  /* select with + button */
+  .select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 4px;
+  }
+  .select-row select {
+    flex: 1;
+    border-bottom: none !important;
+    padding-bottom: 4px !important;
+  }
+  .add-mini {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--terracotta);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .add-mini:hover {
+    background: var(--terracotta);
+    color: white;
+    border-color: var(--terracotta);
+    transform: rotate(90deg);
+  }
+
+  /* === MODAL === */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(42, 37, 32, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fade 0.2s ease;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 32px 36px;
+    max-width: 520px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    animation: modalIn 0.25s cubic-bezier(0.2, 0.9, 0.4, 1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  .modal h3 {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .modal h3 em {
+    font-style: italic;
+    color: var(--terracotta);
+    font-weight: 400;
+  }
+  .modal .modal-sub {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-bottom: 24px;
+    letter-spacing: 0.02em;
+  }
+  .modal-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 22px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-close:hover { background: var(--cream); color: var(--ink); }
+
+  .form-row {
+    margin-bottom: 16px;
+  }
+  .form-row.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-row.triple {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 10px;
+  }
+  .form-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--cream);
+    padding: 10px 14px;
+    font-family: inherit;
+    color: var(--ink);
+    font-size: 14px;
+    border-radius: 4px;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .form-input:focus {
+    border-color: var(--terracotta);
+    background: var(--paper);
+  }
+  .form-hint {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .form-hint code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--cream-deep);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--terracotta-deep);
+    font-size: 10px;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover {
+    border-color: var(--ink-soft);
+  }
+  .btn.primary {
+    background: var(--terracotta);
+    color: white;
+    border-color: var(--terracotta);
+  }
+  .btn.primary:hover {
+    background: var(--terracotta-deep);
+    border-color: var(--terracotta-deep);
+  }
+
+  .place-list {
+    margin-top: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    background: var(--cream);
+  }
+  .place-list:empty::before {
+    content: '아직 추가한 장소가 없어요';
+    display: block;
+    padding: 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+  .place-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+  }
+  .place-item:last-child { border-bottom: none; }
+  .place-item .place-name { font-weight: 500; }
+  .place-item .place-coords {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-left: 10px;
+  }
+  .place-item button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .place-item button:hover { color: var(--terracotta); background: var(--paper); }
+
+  .info-box {
+    background: var(--cream);
+    border-left: 3px solid var(--gold);
+    padding: 12px 16px;
+    border-radius: 0 4px 4px 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .info-box b { color: var(--terracotta-deep); }
+
+  .masthead-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .share-chip {
+    border-color: var(--terracotta) !important;
+    color: var(--terracotta) !important;
+  }
+  .share-chip:hover {
+    background: var(--terracotta) !important;
+    color: white !important;
+  }
+
+  .shared-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #FFF6E8 0%, #FBEBD8 100%);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-sm);
+    animation: fade 0.4s ease;
+  }
+  .shared-banner[hidden] { display: none; }
+  .shared-banner .sb-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .shared-banner .sb-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .shared-banner .sb-text b {
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .shared-banner .sb-sub {
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .shared-banner .sb-save {
+    flex-shrink: 0;
+  }
+  .shared-banner .sb-dismiss {
+    position: static;
+    flex-shrink: 0;
+  }
+  @media (max-width: 600px) {
+    .shared-banner { flex-wrap: wrap; }
+    .shared-banner .sb-text { flex-basis: calc(100% - 50px); }
+  }
+
+  .share-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .share-buttons .share-action {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.15s;
+    width: 100%;
+  }
+  .share-buttons .share-action:hover {
+    background: var(--paper);
+    border-color: var(--terracotta);
+    transform: translateX(2px);
+  }
+  .share-buttons .share-action .sa-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: var(--paper);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+  }
+  .share-buttons .share-action .sa-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .share-buttons .share-action .sa-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .share-buttons .share-action .sa-desc {
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 22px;
+    border-radius: 100px;
+    font-size: 13px;
+    box-shadow: var(--shadow-lg);
+    z-index: 10000;
+    animation: toastIn 0.3s cubic-bezier(0.2, 0.9, 0.4, 1);
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translate(-50%, 20px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  /* === BUDGET HERO (new) === */
+  .bg-hero {
+    background: linear-gradient(135deg, #2A2520 0%, #3D362E 100%);
+    color: var(--paper);
+    border-radius: 6px;
+    padding: 36px 40px;
+    margin-bottom: 26px;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 32px;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(201, 154, 92, 0.15), transparent 70%);
+    pointer-events: none;
+  }
+  @media (max-width: 700px) {
+    .bg-hero { grid-template-columns: 1fr; padding: 28px 24px; gap: 22px; }
+  }
+  .bg-hero-main {
+    position: relative;
+    z-index: 1;
+  }
+  .bg-hero-label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(245, 239, 229, 0.55);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .bg-hero-value {
+    font-family: 'Fraunces', 'Noto Serif KR', serif;
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--gold);
+  }
+  .bg-hero-value .unit {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: rgba(201, 154, 92, 0.7);
+    margin-left: 6px;
+  }
+  @media (max-width: 700px) {
+    .bg-hero-value { font-size: 42px; }
+    .bg-hero-value .unit { font-size: 18px; }
+  }
+  .bg-hero-sub {
+    font-size: 13px;
+    color: rgba(245, 239, 229, 0.6);
+    margin-top: 10px;
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+  }
+  .bg-hero-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .bg-hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 1px solid rgba(245, 239, 229, 0.15);
+    padding-left: 14px;
+  }
+  .bg-hero-stat .lab {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(245, 239, 229, 0.5);
+    font-weight: 600;
+  }
+  .bg-hero-stat .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: rgba(245, 239, 229, 0.9);
+    font-weight: 500;
+  }
+
+  .card-head {
+    margin-bottom: 18px;
+  }
+  .card-head h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .card-head .card-sub {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  /* fixed cost row */
+  .fixed-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 160px 32px;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--line-soft);
+  }
+  .fixed-row:last-child { border-bottom: none; }
+  .fixed-row .fr-icon {
+    width: 32px; height: 32px;
+    background: var(--cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .fixed-row input {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 6px 0;
+    outline: none;
+    width: 100%;
+    border-bottom: 1px solid var(--line-soft);
+    transition: border-color 0.2s;
+  }
+  .fixed-row input:focus { border-color: var(--terracotta); }
+  .fixed-row .fr-amount {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    font-size: 13px;
+    color: var(--terracotta-deep);
+  }
+
+  /* category breakdown row */
+  .cat-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 90px 130px;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row .cr-icon {
+    width: 36px; height: 36px;
+    background: var(--cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .cat-row .cr-name {
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .cat-row .cr-name .sub {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .cat-row .cr-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: right;
+  }
+  .cat-row .cr-amount {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: right;
+  }
+  .cat-row .cr-amount .small {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-left: 3px;
+    font-weight: 400;
+  }
+  @media (max-width: 700px) {
+    .cat-row { grid-template-columns: 32px 1fr auto; }
+    .cat-row .cr-pct { display: none; }
+  }
+
+  /* footer note */
+  .footnote {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .footnote em {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--terracotta);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="masthead">
+    <div class="brand">
+      <div class="brand-mark">Voyage</div>
+      <div class="brand-sub">Travel Planner · Est. 2026</div>
+    </div>
+    <div class="masthead-right">
+      <div class="meta-line">
+        <span id="metaCountry">일본</span>
+        <span class="meta-dot"></span>
+        <span id="metaPeople">4명</span>
+        <span class="meta-dot"></span>
+        <span id="metaDays">2박 3일</span>
+      </div>
+      <button id="shareBtn" class="chip-btn share-chip" title="공유 / 내보내기">
+        <span style="margin-right:4px;">✦</span> 공유
+      </button>
+    </div>
+  </header>
+
+  <!-- shared mode banner -->
+  <div class="shared-banner" id="sharedBanner" hidden>
+    <span class="sb-icon">💌</span>
+    <div class="sb-text">
+      <b>공유받은 여행 플랜을 보고 있어요</b>
+      <span class="sb-sub">수정하면 자동으로 내 플랜으로 저장돼요</span>
+    </div>
+    <button class="btn primary sb-save" id="saveSharedBtn">내 것으로 저장</button>
+    <button class="modal-close sb-dismiss" id="dismissSharedBtn">×</button>
+  </div>
+
+  <!-- TRIP HERO -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-field title">
+        <label>Trip Title · 여행 제목</label>
+        <input type="text" id="tripTitle" value="도쿄 가족여행 ✿ 엄마·이모·사촌동생·나" />
+      </div>
+      <div class="hero-field">
+        <label>Country · 나라</label>
+        <div class="select-row">
+          <select id="countrySel"></select>
+          <button class="add-mini" id="addCountryBtn" title="새 나라 추가">+</button>
+        </div>
+      </div>
+      <div class="hero-field">
+        <label>Region · 지역</label>
+        <div class="select-row">
+          <select id="regionSel"></select>
+          <button class="add-mini" id="addRegionBtn" title="새 지역 추가">+</button>
+        </div>
+      </div>
+      <div class="hero-field">
+        <label>Dates · 날짜</label>
+        <input type="text" id="dateRange" placeholder="예: 11/15 - 11/17" value="11/15 - 11/17" />
+      </div>
+      <div class="hero-field">
+        <label>People · 인원</label>
+        <input type="number" id="people" value="4" min="1" max="20" />
+      </div>
+    </div>
+  </section>
+
+  <!-- TABS -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="overview"><span class="tab-num">i.</span>개요</button>
+    <button class="tab" data-tab="itinerary"><span class="tab-num">ii.</span>일정</button>
+    <button class="tab" data-tab="budget"><span class="tab-num">iii.</span>예산 &amp; 경비</button>
+    <button class="tab" data-tab="map"><span class="tab-num">iv.</span>지도</button>
+  </nav>
+
+  <!-- OVERVIEW PANEL -->
+  <section class="panel active" id="panel-overview">
+    <h2 class="section-title">A glance at your <em>journey</em></h2>
+    <p class="section-sub">전체 여행 한눈에 보기</p>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label">Total Cost</div>
+        <div class="stat-value" id="ovTotal">0<span class="stat-unit">원</span></div>
+        <div class="stat-foot" id="ovTotalFoot">총 비용</div>
+      </div>
+      <div class="stat" style="background:linear-gradient(135deg, #FFF6E8 0%, #FBEBD8 100%);border-color:var(--gold);">
+        <div class="stat-label" style="color:var(--terracotta-deep);">Per Person ★</div>
+        <div class="stat-value" id="ovPerPerson" style="color:var(--terracotta-deep);">0<span class="stat-unit">원</span></div>
+        <div class="stat-foot">1인당 총 비용</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Itinerary</div>
+        <div class="stat-value" id="ovSpent">0<span class="stat-unit">원</span></div>
+        <div class="stat-foot" id="ovSpentFoot">일정에 적은 합계</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Pre-paid</div>
+        <div class="stat-value" id="ovRemain">0<span class="stat-unit">원</span></div>
+        <div class="stat-foot" id="ovRemainFoot">사전 결제 (항공·숙박)</div>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      <div class="card">
+        <h3 style="font-family:'Fraunces',serif;font-size:18px;margin-bottom:18px;font-weight:600;">예산 분포</h3>
+        <div id="ovProgress"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-family:'Fraunces',serif;font-size:18px;margin-bottom:18px;font-weight:600;">여행 메모</h3>
+        <textarea id="tripNotes" style="width:100%;min-height:200px;border:none;background:transparent;resize:vertical;font-family:'Noto Sans KR',sans-serif;font-size:14px;line-height:1.7;color:var(--ink-soft);outline:none;" placeholder="여권, 보험, 환전, 짐... 잊지 말 것들을 적어두세요 ✿">✿ 여권 유효기간 6개월 이상 확인 (4명 모두!)
+✿ 환전: 1인 5만엔 정도 추천
+✿ 데이터: eSIM 또는 포켓와이파이 (엄마·이모용 설정 미리 도와드리기)
+✿ 우산, 보조배터리, 멀티탭
+✿ 알러지/응급약 + 엄마·이모 상비약 챙기기
+✿ 캐리어 무게 23kg 이하로
+✿ 편한 운동화 — 도쿄는 많이 걸어요
+✿ 사촌동생 좋아할 만한 일정도 한두 개 넣기</textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ITINERARY PANEL -->
+  <section class="panel" id="panel-itinerary">
+    <h2 class="section-title">Day by <em>day</em></h2>
+    <p class="section-sub">하루하루 알찬 일정</p>
+
+    <div class="day-tabs" id="dayTabs"></div>
+    <div id="dayContents"></div>
+  </section>
+
+  <!-- BUDGET PANEL -->
+  <section class="panel" id="panel-budget">
+    <h2 class="section-title">Budget &amp; <em>expenses</em></h2>
+    <p class="section-sub">사전 결제만 직접 입력 — 일정에 적은 비용은 자동으로 합산돼요</p>
+
+    <!-- Big per-person hero -->
+    <div class="bg-hero">
+      <div class="bg-hero-main">
+        <div class="bg-hero-label">1인당 예상 비용</div>
+        <div class="bg-hero-value" id="bgPerPerson">0<span class="unit">원</span></div>
+        <div class="bg-hero-sub" id="bgPerPersonSub">총 0원 / 4명</div>
+      </div>
+      <div class="bg-hero-side">
+        <div class="bg-hero-stat">
+          <span class="lab">총 합계</span>
+          <span class="val" id="bgTotal">0원</span>
+        </div>
+        <div class="bg-hero-stat">
+          <span class="lab">사전결제</span>
+          <span class="val" id="bgFixedSum">0원</span>
+        </div>
+        <div class="bg-hero-stat">
+          <span class="lab">현지경비</span>
+          <span class="val" id="bgItinSum">0원</span>
+        </div>
+        <div class="bg-hero-stat">
+          <span class="lab">1인 사전결제</span>
+          <span class="val" id="bgPerDay">0원</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fixed costs (manual) -->
+    <div class="card" style="margin-bottom:22px;">
+      <div class="card-head">
+        <h3>✦ 사전 결제</h3>
+        <span class="card-sub">항공권·숙박·보험처럼 미리 내는 큰 비용</span>
+      </div>
+      <div id="fixedCostsList"></div>
+      <button class="add-activity" id="addFixedBtn">+ 사전 결제 항목 추가</button>
+    </div>
+
+    <!-- Auto-calculated from itinerary -->
+    <div class="card">
+      <div class="card-head">
+        <h3>📅 현지 경비 <span style="color:var(--ink-faint);font-weight:400;font-size:13px;">— 일정에서 자동 합계</span></h3>
+        <span class="card-sub">일정 탭에서 활동에 카테고리·비용을 적으면 여기에 자동으로 모여요</span>
+      </div>
+      <div id="categoryBreakdown"></div>
+    </div>
+  </section>
+
+  <!-- MAP PANEL -->
+  <section class="panel" id="panel-map">
+    <h2 class="section-title">The <em>map</em></h2>
+    <p class="section-sub">일정 장소들을 지도에서 한눈에 — 나라/지역을 바꾸면 다음 여행에도 그대로 사용</p>
+
+    <div class="map-controls">
+      <button class="chip-btn primary" id="fitMarkers">📍 모든 장소 보기</button>
+      <button class="chip-btn" id="recenter">🎯 도시 중심으로</button>
+      <button class="chip-btn" id="managePlacesBtn">✦ 장소 관리</button>
+      <span class="map-info">현재 보는 곳 · <b id="mapCity">도쿄</b></span>
+    </div>
+    <div id="map"></div>
+    <p style="font-size:12px;color:var(--ink-faint);margin-top:10px;text-align:center;">
+      💡 일정 탭에서 <b style="color:var(--terracotta);">장소 이름</b>을 입력하면 자동으로 지도에 표시됩니다
+    </p>
+  </section>
+
+  <p class="footnote">made with <em>care</em> &nbsp;·&nbsp; bon voyage</p>
+
+</div>
+
+<!-- ============= MODALS ============= -->
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" id="modalContent"><!-- dynamic --></div>
+</div>
+
+<script>
+/* =======================================================
+   DATA · 나라 & 지역 (좌표는 도시 중심)
+   ======================================================= */
+const COUNTRIES = {
+  jp: { name: '일본', flag: '🇯🇵', currency: 'JPY', symbol: '¥',
+    regions: {
+      tokyo:    { name: '도쿄',    center: [35.6762, 139.6503], zoom: 12 },
+      osaka:    { name: '오사카',  center: [34.6937, 135.5023], zoom: 12 },
+      kyoto:    { name: '교토',    center: [35.0116, 135.7681], zoom: 13 },
+      fukuoka:  { name: '후쿠오카', center: [33.5904, 130.4017], zoom: 13 },
+      sapporo:  { name: '삿포로',  center: [43.0618, 141.3545], zoom: 12 },
+      okinawa:  { name: '오키나와', center: [26.2124, 127.6809], zoom: 11 }
+    }
+  },
+  kr: { name: '대한민국', flag: '🇰🇷', currency: 'KRW', symbol: '₩',
+    regions: {
+      seoul:   { name: '서울',  center: [37.5665, 126.9780], zoom: 12 },
+      busan:   { name: '부산',  center: [35.1796, 129.0756], zoom: 12 },
+      jeju:    { name: '제주',  center: [33.4996, 126.5312], zoom: 11 },
+      gangwon: { name: '강원',  center: [37.8228, 128.1555], zoom: 10 }
+    }
+  },
+  us: { name: '미국', flag: '🇺🇸', currency: 'USD', symbol: '$',
+    regions: {
+      ny:    { name: '뉴욕',     center: [40.7128, -74.0060], zoom: 12 },
+      la:    { name: 'LA',      center: [34.0522, -118.2437], zoom: 11 },
+      sf:    { name: '샌프란시스코', center: [37.7749, -122.4194], zoom: 12 },
+      lasvegas: { name: '라스베가스', center: [36.1699, -115.1398], zoom: 12 },
+      hawaii:   { name: '하와이',    center: [21.3099, -157.8581], zoom: 11 }
+    }
+  },
+  fr: { name: '프랑스', flag: '🇫🇷', currency: 'EUR', symbol: '€',
+    regions: {
+      paris:  { name: '파리', center: [48.8566, 2.3522], zoom: 12 },
+      nice:   { name: '니스', center: [43.7102, 7.2620], zoom: 13 },
+      lyon:   { name: '리옹', center: [45.7640, 4.8357], zoom: 12 }
+    }
+  },
+  uk: { name: '영국', flag: '🇬🇧', currency: 'GBP', symbol: '£',
+    regions: {
+      london:    { name: '런던',    center: [51.5074, -0.1278], zoom: 12 },
+      edinburgh: { name: '에든버러', center: [55.9533, -3.1883], zoom: 13 }
+    }
+  },
+  it: { name: '이탈리아', flag: '🇮🇹', currency: 'EUR', symbol: '€',
+    regions: {
+      rome:     { name: '로마',    center: [41.9028, 12.4964], zoom: 13 },
+      florence: { name: '피렌체',  center: [43.7696, 11.2558], zoom: 13 },
+      venice:   { name: '베네치아', center: [45.4408, 12.3155], zoom: 13 },
+      milan:    { name: '밀라노',  center: [45.4642, 9.1900], zoom: 12 }
+    }
+  },
+  es: { name: '스페인', flag: '🇪🇸', currency: 'EUR', symbol: '€',
+    regions: {
+      madrid:    { name: '마드리드',   center: [40.4168, -3.7038], zoom: 13 },
+      barcelona: { name: '바르셀로나', center: [41.3851, 2.1734], zoom: 13 }
+    }
+  },
+  th: { name: '태국', flag: '🇹🇭', currency: 'THB', symbol: '฿',
+    regions: {
+      bangkok:    { name: '방콕',    center: [13.7563, 100.5018], zoom: 12 },
+      phuket:     { name: '푸켓',    center: [7.8804, 98.3923], zoom: 11 },
+      chiangmai:  { name: '치앙마이', center: [18.7883, 98.9853], zoom: 12 }
+    }
+  },
+  vn: { name: '베트남', flag: '🇻🇳', currency: 'VND', symbol: '₫',
+    regions: {
+      hanoi:    { name: '하노이',  center: [21.0285, 105.8542], zoom: 12 },
+      hcm:      { name: '호치민',  center: [10.8231, 106.6297], zoom: 12 },
+      danang:   { name: '다낭',    center: [16.0544, 108.2022], zoom: 13 },
+      hoian:    { name: '호이안',  center: [15.8801, 108.3380], zoom: 14 }
+    }
+  },
+  sg: { name: '싱가포르', flag: '🇸🇬', currency: 'SGD', symbol: 'S$',
+    regions: { sg: { name: '싱가포르', center: [1.3521, 103.8198], zoom: 12 } }
+  },
+  tw: { name: '대만', flag: '🇹🇼', currency: 'TWD', symbol: 'NT$',
+    regions: {
+      taipei:    { name: '타이베이', center: [25.0330, 121.5654], zoom: 12 },
+      kaohsiung: { name: '가오슝',   center: [22.6273, 120.3014], zoom: 12 }
+    }
+  },
+  au: { name: '호주', flag: '🇦🇺', currency: 'AUD', symbol: 'A$',
+    regions: {
+      sydney:    { name: '시드니',  center: [-33.8688, 151.2093], zoom: 12 },
+      melbourne: { name: '멜버른',  center: [-37.8136, 144.9631], zoom: 12 }
+    }
+  },
+  ca: { name: '캐나다', flag: '🇨🇦', currency: 'CAD', symbol: 'C$',
+    regions: {
+      toronto:   { name: '토론토',  center: [43.6532, -79.3832], zoom: 12 },
+      vancouver: { name: '밴쿠버',  center: [49.2827, -123.1207], zoom: 12 }
+    }
+  },
+  de: { name: '독일', flag: '🇩🇪', currency: 'EUR', symbol: '€',
+    regions: {
+      berlin: { name: '베를린', center: [52.5200, 13.4050], zoom: 12 },
+      munich: { name: '뮌헨',   center: [48.1351, 11.5820], zoom: 12 }
+    }
+  }
+};
+
+/* 도쿄 주요 명소 좌표 (이름으로 자동 매칭) */
+const PLACE_LIBRARY = {
+  '센소지': [35.7148, 139.7967], '센소지절': [35.7148, 139.7967], '아사쿠사': [35.7118, 139.7967],
+  '도쿄 스카이트리': [35.7101, 139.8107], '스카이트리': [35.7101, 139.8107],
+  '시부야': [35.6580, 139.7016], '시부야 스크램블': [35.6595, 139.7004], '하치코': [35.6590, 139.7005],
+  '하라주쿠': [35.6702, 139.7026], '다케시타거리': [35.6716, 139.7032], '다케시타': [35.6716, 139.7032],
+  '오모테산도': [35.6657, 139.7128],
+  '메이지신궁': [35.6764, 139.6993], '메이지 신궁': [35.6764, 139.6993],
+  '신주쿠': [35.6896, 139.7006], '가부키초': [35.6948, 139.7032],
+  '도쿄타워': [35.6586, 139.7454], '롯폰기': [35.6627, 139.7314],
+  '디즈니랜드': [35.6329, 139.8804], '도쿄디즈니랜드': [35.6329, 139.8804],
+  '디즈니씨': [35.6267, 139.8851], '도쿄디즈니씨': [35.6267, 139.8851],
+  '오다이바': [35.6191, 139.7748], '긴자': [35.6717, 139.7650],
+  '우에노': [35.7141, 139.7774], '우에노공원': [35.7156, 139.7745],
+  '아키하바라': [35.7022, 139.7745], '오모이데요코초': [35.6938, 139.7000],
+  '나카메구로': [35.6447, 139.6993], '에비스': [35.6469, 139.7100],
+  '하네다공항': [35.5494, 139.7798], '나리타공항': [35.7720, 140.3929]
+};
+
+/* =======================================================
+   STATE · 상태 관리 (in-memory + window.storage 가능시)
+   ======================================================= */
+const STORAGE_KEY = 'voyage_planner_v1';
+
+/* 활동 카테고리 — 일정에 태그 달면 예산이 자동 합산됨 */
+const CATEGORIES = {
+  food:    { icon: '🍣', name: '식비' },
+  transit: { icon: '🚆', name: '교통' },
+  sights:  { icon: '🎫', name: '관광' },
+  shop:    { icon: '🛍', name: '쇼핑' },
+  other:   { icon: '✦', name: '기타' }
+};
+
+const defaultState = () => ({
+  title: '도쿄 가족여행 ✿ 엄마·이모·사촌동생·나',
+  country: 'jp',
+  region: 'tokyo',
+  dates: '11/15 - 11/17',
+  people: 4,
+  notes: `✿ 여권 유효기간 6개월 이상 확인 (4명 모두!)
+✿ 환전: 1인 5만엔 정도 추천
+✿ 데이터: eSIM 또는 포켓와이파이 (엄마·이모용 설정 미리 도와드리기)
+✿ 우산, 보조배터리, 멀티탭
+✿ 알러지/응급약 + 엄마·이모 상비약 챙기기
+✿ 캐리어 무게 23kg 이하로
+✿ 편한 운동화 — 도쿄는 많이 걸어요
+✿ 사촌동생 좋아할 만한 일정도 한두 개 넣기`,
+  days: [
+    {
+      title: 'Day 1 · 도쿄의 첫인상',
+      date: '11/15 (금)',
+      activities: [
+        { time: '10:00', name: '하네다공항 도착',         place: '하네다공항',     cost: 0,      category: 'transit' },
+        { time: '13:00', name: '호텔 체크인 & 점심',      place: '신주쿠',         cost: 60000,  category: 'food' },
+        { time: '15:00', name: '센소지 절 구경',          place: '센소지',         cost: 0,      category: 'sights' },
+        { time: '17:00', name: '도쿄 스카이트리 전망대',   place: '도쿄 스카이트리', cost: 30000,  category: 'sights' },
+        { time: '19:30', name: '시부야 스크램블 인증샷',   place: '시부야 스크램블', cost: 0,      category: 'sights' },
+        { time: '20:30', name: '시부야 이자카야 저녁',    place: '시부야',         cost: 80000,  category: 'food' }
+      ]
+    },
+    {
+      title: 'Day 2 · 도쿄의 매력 속으로',
+      date: '11/16 (토)',
+      activities: [
+        { time: '09:30', name: '메이지 신궁 산책',        place: '메이지신궁',     cost: 0,      category: 'sights' },
+        { time: '11:00', name: '하라주쿠 다케시타 거리',   place: '다케시타거리',   cost: 50000,  category: 'shop' },
+        { time: '13:00', name: '오모테산도 카페 점심',    place: '오모테산도',     cost: 70000,  category: 'food' },
+        { time: '15:00', name: '시부야 쇼핑 (109, PARCO)', place: '시부야',        cost: 200000, category: 'shop' },
+        { time: '18:30', name: '신주쿠 야경',            place: '신주쿠',         cost: 0,      category: 'sights' },
+        { time: '20:00', name: '오모이데요코초 꼬치구이',  place: '오모이데요코초',  cost: 90000,  category: 'food' }
+      ]
+    },
+    {
+      title: 'Day 3 · 굿바이 도쿄',
+      date: '11/17 (일)',
+      activities: [
+        { time: '10:00', name: '긴자 백화점 쇼핑',       place: '긴자',           cost: 150000, category: 'shop' },
+        { time: '13:00', name: '점심 & 마지막 디저트',   place: '긴자',           cost: 60000,  category: 'food' },
+        { time: '15:00', name: '호텔 체크아웃 & 공항',   place: '하네다공항',     cost: 0,      category: 'transit' },
+        { time: '18:00', name: '귀국행 비행기',          place: '하네다공항',     cost: 0,      category: 'transit' }
+      ]
+    }
+  ],
+  /* 사전 결제 — 항공·숙박처럼 일정에 끼우기 어려운 비용만 직접 입력 */
+  fixedCosts: [
+    { icon: '✈', name: '항공료', amount: 1600000 },
+    { icon: '🏨', name: '숙박',  amount: 1200000 }
+  ],
+  activeDay: 0,
+  customCountries: {},
+  customPlaces: {}
+});
+
+let state = defaultState();
+let map = null;
+let markerLayer = null;
+
+/* persistence */
+async function saveState() {
+  try {
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state));
+    } else {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+  } catch (e) { /* 저장 실패해도 동작은 계속 */ }
+}
+async function loadState() {
+  try {
+    if (window.storage && typeof window.storage.get === 'function') {
+      const r = await window.storage.get(STORAGE_KEY);
+      if (r && r.value) return JSON.parse(r.value);
+    } else if (typeof localStorage !== 'undefined') {
+      const v = localStorage.getItem(STORAGE_KEY);
+      if (v) return JSON.parse(v);
+    }
+  } catch (e) {}
+  return null;
+}
+
+/* =======================================================
+   UTIL
+   ======================================================= */
+function fmt(n) {
+  if (!n && n !== 0) return '0';
+  return Math.round(n).toLocaleString('ko-KR');
+}
+function $(s) { return document.querySelector(s); }
+function $$(s) { return document.querySelectorAll(s); }
+
+/* merge built-in + custom countries (custom overrides) */
+function getCountries() {
+  const merged = JSON.parse(JSON.stringify(COUNTRIES));
+  Object.entries(state.customCountries || {}).forEach(([code, cc]) => {
+    if (merged[code]) {
+      /* same code → merge regions */
+      merged[code] = {
+        ...merged[code],
+        ...cc,
+        regions: { ...merged[code].regions, ...(cc.regions || {}) }
+      };
+    } else {
+      merged[code] = cc;
+    }
+  });
+  return merged;
+}
+
+function getPlaces() {
+  return { ...PLACE_LIBRARY, ...(state.customPlaces || {}) };
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* toast */
+function toast(msg) {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+
+/* =======================================================
+   SHARE · URL hash + JSON file
+   ======================================================= */
+let SHARED_MODE = false;
+
+function encodeShare(obj) {
+  const json = JSON.stringify(obj);
+  const bytes = new TextEncoder().encode(json);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeShare(str) {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = (4 - (b64.length % 4)) % 4;
+  const bin = atob(b64 + '='.repeat(pad));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function readShareFromUrl() {
+  const hash = window.location.hash || '';
+  const m = hash.match(/[#&]data=([^&]+)/);
+  if (!m) return null;
+  try { return decodeShare(decodeURIComponent(m[1])); }
+  catch (e) { console.warn('share decode failed', e); return null; }
+}
+
+function buildShareUrl() {
+  const encoded = encodeShare(state);
+  return window.location.origin + window.location.pathname + '#data=' + encoded;
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e2) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+}
+
+function showShareModal() {
+  const url = buildShareUrl();
+  const urlLength = url.length;
+  const tooLong = urlLength > 7500;
+
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3>플랜 <em>공유하기</em></h3>
+    <p class="modal-sub">친구·가족과 같은 플랜을 보려면 공유하세요</p>
+
+    <div class="info-box">
+      💡 데이터는 각자의 브라우저에 저장돼요. 그래서 파일이나 링크만 보내면 받는 사람은 기본 플랜만 보입니다. 아래 방법으로 <b>현재 플랜을 통째로 보내주세요</b>.
+    </div>
+
+    <div class="share-buttons">
+      <button class="share-action" onclick="shareViaUrl()">
+        <div class="sa-icon">🔗</div>
+        <div class="sa-text">
+          <span class="sa-title">공유 링크 복사</span>
+          <span class="sa-desc">${tooLong ? '⚠ 데이터가 너무 커요 — 파일로 보내주세요' : 'URL 안에 플랜 데이터가 통째로 들어있어요 (' + urlLength + '자)'}</span>
+        </div>
+      </button>
+      <button class="share-action" onclick="downloadJson()">
+        <div class="sa-icon">⬇</div>
+        <div class="sa-text">
+          <span class="sa-title">JSON 파일로 저장</span>
+          <span class="sa-desc">.json 파일을 보내고, 받은 사람이 불러오기로 열면 돼요</span>
+        </div>
+      </button>
+      <button class="share-action" onclick="document.getElementById('uploadInput').click()">
+        <div class="sa-icon">⬆</div>
+        <div class="sa-text">
+          <span class="sa-title">JSON 파일 불러오기</span>
+          <span class="sa-desc">받은 .json 파일을 열어서 플랜 불러오기</span>
+        </div>
+      </button>
+    </div>
+    <input type="file" id="uploadInput" accept=".json,application/json" style="display:none;" onchange="handleUpload(event)" />
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">닫기</button>
+    </div>
+  `);
+}
+
+async function shareViaUrl() {
+  const url = buildShareUrl();
+  if (url.length > 7500) {
+    alert('데이터가 너무 길어서 링크로 보내기 어려워요. JSON 파일로 저장해서 보내주세요.');
+    return;
+  }
+  const ok = await copyToClipboard(url);
+  if (ok) {
+    closeModal();
+    toast('🔗 링크가 복사됐어요!');
+  } else {
+    prompt('아래 링크를 복사해서 보내주세요:', url);
+  }
+}
+
+function downloadJson() {
+  const dataStr = JSON.stringify(state, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeTitle = (state.title || 'trip').replace(/[^\w가-힣\s-]/g, '').replace(/\s+/g, '_').slice(0, 40) || 'trip';
+  a.href = url;
+  a.download = safeTitle + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  closeModal();
+  toast('⬇ 파일을 저장했어요');
+}
+
+function handleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.days || !data.budget) throw new Error('invalid format');
+      if (!confirm('현재 플랜을 불러온 데이터로 바꾸시겠어요?\n(기존 플랜은 사라집니다)')) return;
+      state = Object.assign(defaultState(), data);
+      saveState();
+      hideSharedBanner();
+      closeModal();
+      reloadAll();
+      toast('✿ 플랜을 불러왔어요');
+    } catch (err) {
+      alert('파일을 읽지 못했어요. 올바른 JSON 파일인지 확인해주세요.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showSharedBanner() {
+  SHARED_MODE = true;
+  $('#sharedBanner').hidden = false;
+}
+function hideSharedBanner() {
+  $('#sharedBanner').hidden = true;
+  SHARED_MODE = false;
+  if (window.location.hash.includes('data=')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+function reloadAll() {
+  buildCountrySelector();
+  $('#countrySel').value = state.country;
+  $('#regionSel').value = state.region;
+  $('#tripTitle').value = state.title || '';
+  $('#dateRange').value = state.dates || '';
+  $('#people').value    = state.people || 1;
+  $('#tripNotes').value = state.notes || '';
+  state.activeDay = Math.min(state.activeDay || 0, Math.max(0, state.days.length - 1));
+  updateMeta();
+  renderItinerary();
+  renderBudget();
+  renderOverview();
+  if (map) { recenterMap(true); refreshMap(); }
+}
+
+/* =======================================================
+   HEADER (country/region selectors)
+   ======================================================= */
+function buildCountrySelector() {
+  const cSel = $('#countrySel');
+  cSel.innerHTML = '';
+  const all = getCountries();
+  Object.entries(all).forEach(([code, c]) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = `${c.flag}  ${c.name}`;
+    cSel.appendChild(opt);
+  });
+  if (!all[state.country]) state.country = Object.keys(all)[0];
+  cSel.value = state.country;
+  buildRegionSelector();
+}
+function buildRegionSelector() {
+  const rSel = $('#regionSel');
+  rSel.innerHTML = '';
+  const all = getCountries();
+  const regions = all[state.country].regions;
+  Object.entries(regions).forEach(([code, r]) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = r.name;
+    rSel.appendChild(opt);
+  });
+  if (!regions[state.region]) state.region = Object.keys(regions)[0];
+  rSel.value = state.region;
+}
+
+function updateMeta() {
+  const all = getCountries();
+  $('#metaCountry').textContent = all[state.country].name;
+  $('#metaPeople').textContent = `${state.people}명`;
+  $('#metaDays').textContent = `${Math.max(1, state.days.length - 1)}박 ${state.days.length}일`;
+  $('#mapCity').textContent = all[state.country].regions[state.region].name;
+}
+
+/* =======================================================
+   ITINERARY
+   ======================================================= */
+function renderItinerary() {
+  const tabs = $('#dayTabs');
+  const contents = $('#dayContents');
+  tabs.innerHTML = '';
+  contents.innerHTML = '';
+
+  state.days.forEach((day, idx) => {
+    const pill = document.createElement('button');
+    pill.className = 'day-pill' + (idx === state.activeDay ? ' active' : '');
+    pill.textContent = `Day ${idx + 1}`;
+    pill.onclick = () => { state.activeDay = idx; renderItinerary(); saveState(); };
+    tabs.appendChild(pill);
+  });
+
+  const addPill = document.createElement('button');
+  addPill.className = 'day-pill add';
+  addPill.textContent = '+ 일자 추가';
+  addPill.onclick = () => {
+    state.days.push({ title: `Day ${state.days.length + 1}`, date: '', activities: [] });
+    state.activeDay = state.days.length - 1;
+    renderItinerary(); updateMeta(); refreshAll(); saveState();
+  };
+  tabs.appendChild(addPill);
+
+  if (state.days.length === 0) return;
+  const day = state.days[state.activeDay];
+
+  const container = document.createElement('div');
+  container.className = 'day-content';
+
+  const head = document.createElement('div');
+  head.className = 'day-header';
+  head.innerHTML = `
+    <input class="day-title" style="background:transparent;border:none;outline:none;font-family:'Fraunces','Noto Serif KR',serif;font-size:22px;font-weight:600;width:60%;color:var(--ink);" value="${day.title.replace(/"/g, '&quot;')}" data-field="title" />
+    <input class="day-date" style="background:transparent;border:none;outline:none;text-align:right;font-size:13px;color:var(--ink-faint);letter-spacing:0.05em;width:35%;" value="${day.date.replace(/"/g, '&quot;')}" data-field="date" placeholder="날짜 (예: 11/15 토)" />
+  `;
+  head.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      day[e.target.dataset.field] = e.target.value;
+      saveState();
+    });
+  });
+  container.appendChild(head);
+
+  day.activities.forEach((act, aIdx) => {
+    const row = document.createElement('div');
+    row.className = 'activity';
+    const catOptions = Object.entries(CATEGORIES).map(([code, c]) =>
+      `<option value="${code}" ${(act.category||'other')===code?'selected':''}>${c.icon} ${c.name}</option>`
+    ).join('');
+    row.innerHTML = `
+      <div class="a-time"><input type="text" placeholder="00:00" value="${act.time || ''}" /></div>
+      <div class="a-name"><input type="text" placeholder="활동" value="${(act.name||'').replace(/"/g,'&quot;')}" /></div>
+      <div class="a-place"><input type="text" placeholder="📍 장소" value="${(act.place||'').replace(/"/g,'&quot;')}" /></div>
+      <div class="a-cat"><select>${catOptions}</select></div>
+      <div class="a-cost"><input type="number" placeholder="비용" value="${act.cost || ''}" /></div>
+      <div class="a-del"><button class="icon-btn" title="삭제">×</button></div>
+    `;
+    const tInp  = row.querySelector('.a-time input');
+    const nInp  = row.querySelector('.a-name input');
+    const pInp  = row.querySelector('.a-place input');
+    const cSel  = row.querySelector('.a-cat select');
+    const $Inp  = row.querySelector('.a-cost input');
+    tInp.addEventListener('input', e => { act.time  = e.target.value; saveState(); });
+    nInp.addEventListener('input', e => { act.name  = e.target.value; saveState(); });
+    pInp.addEventListener('input', e => { act.place = e.target.value; saveState(); refreshMap(); });
+    cSel.addEventListener('change', e => { act.category = e.target.value; saveState(); refreshAll(); });
+    $Inp.addEventListener('input', e => { act.cost = parseFloat(e.target.value) || 0; saveState(); refreshAll(); });
+    row.querySelector('.icon-btn').onclick = () => {
+      day.activities.splice(aIdx, 1);
+      renderItinerary(); refreshMap(); refreshAll(); saveState();
+    };
+    container.appendChild(row);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-activity';
+  addBtn.textContent = '+ 활동 추가';
+  addBtn.onclick = () => {
+    day.activities.push({ time: '', name: '', place: '', cost: 0, category: 'other' });
+    renderItinerary(); saveState();
+  };
+  container.appendChild(addBtn);
+
+  contents.appendChild(container);
+}
+
+/* =======================================================
+   BUDGET · 자동 합계 헬퍼
+   ======================================================= */
+/* 일정에서 카테고리별 합계 */
+function getCategoryTotals() {
+  const totals = {};
+  Object.keys(CATEGORIES).forEach(k => totals[k] = 0);
+  state.days.forEach(day => {
+    day.activities.forEach(act => {
+      const cat = CATEGORIES[act.category] ? act.category : 'other';
+      totals[cat] += parseFloat(act.cost) || 0;
+    });
+  });
+  return totals;
+}
+
+function getTotals() {
+  const itin   = Object.values(getCategoryTotals()).reduce((s, v) => s + v, 0);
+  const fixed  = (state.fixedCosts || []).reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+  const total  = itin + fixed;
+  const ppl    = Math.max(1, state.people || 1);
+  const days   = Math.max(1, (state.days || []).length);
+  return {
+    itinerary:    itin,
+    fixed:        fixed,
+    total:        total,
+    perPerson:    total / ppl,
+    perPersonDay: total / ppl / days
+  };
+}
+
+/* =======================================================
+   BUDGET RENDER
+   ======================================================= */
+function renderBudget() {
+  /* fixed costs (manual input) */
+  const list = $('#fixedCostsList');
+  list.innerHTML = '';
+  if (!state.fixedCosts) state.fixedCosts = [];
+
+  state.fixedCosts.forEach((fc, idx) => {
+    const row = document.createElement('div');
+    row.className = 'fixed-row';
+    row.innerHTML = `
+      <div class="fr-icon">${fc.icon || '✦'}</div>
+      <input type="text" value="${(fc.name||'').replace(/"/g,'&quot;')}" placeholder="항목 이름" />
+      <input class="fr-amount" type="number" value="${fc.amount||0}" placeholder="0" />
+      <button class="icon-btn" title="삭제">×</button>
+    `;
+    const ins = row.querySelectorAll('input');
+    ins[0].addEventListener('input', e => { fc.name = e.target.value; saveState(); });
+    ins[1].addEventListener('input', e => { fc.amount = parseFloat(e.target.value) || 0; refreshAll(); saveState(); });
+    row.querySelector('.icon-btn').onclick = () => {
+      state.fixedCosts.splice(idx, 1);
+      renderBudget(); refreshAll(); saveState();
+    };
+    list.appendChild(row);
+  });
+
+  /* category breakdown (auto from itinerary) */
+  const wrap = $('#categoryBreakdown');
+  wrap.innerHTML = '';
+  const cats = getCategoryTotals();
+  const itinTotal = Object.values(cats).reduce((s, v) => s + v, 0);
+
+  Object.entries(CATEGORIES).forEach(([code, c]) => {
+    const amt = cats[code] || 0;
+    const pct = itinTotal > 0 ? (amt / itinTotal * 100) : 0;
+    /* count activities of this category */
+    let count = 0;
+    state.days.forEach(d => d.activities.forEach(a => { if ((a.category||'other') === code) count++; }));
+
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    row.innerHTML = `
+      <div class="cr-icon">${c.icon}</div>
+      <div class="cr-name">${c.name}<span class="sub">${count}개 활동</span></div>
+      <div class="cr-pct">${pct.toFixed(0)}%</div>
+      <div class="cr-amount">${fmt(amt)}<span class="small">원</span></div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  /* update hero numbers */
+  const t = getTotals();
+  const ppl = Math.max(1, state.people || 1);
+  $('#bgPerPerson').innerHTML  = fmt(t.perPerson) + '<span class="unit">원</span>';
+  $('#bgPerPersonSub').textContent = `총 ${fmt(t.total)}원 / ${ppl}명`;
+  $('#bgTotal').textContent    = fmt(t.total) + '원';
+  $('#bgFixedSum').textContent = fmt(t.fixed) + '원';
+  $('#bgItinSum').textContent  = fmt(t.itinerary) + '원';
+  $('#bgPerDay').textContent   = fmt(t.fixed / ppl) + '원';
+}
+
+/* =======================================================
+   OVERVIEW RENDER
+   ======================================================= */
+function renderOverview() {
+  const t = getTotals();
+  const ppl = Math.max(1, state.people || 1);
+
+  $('#ovTotal').innerHTML  = fmt(t.total) + '<span class="stat-unit">원</span>';
+  $('#ovPerPerson').innerHTML = fmt(t.perPerson) + '<span class="stat-unit">원</span>';
+  $('#ovSpent').innerHTML  = fmt(t.itinerary) + '<span class="stat-unit">원</span>';
+  $('#ovRemain').innerHTML = fmt(t.fixed) + '<span class="stat-unit">원</span>';
+  $('#ovTotalFoot').textContent = `${state.days.length}일 × ${ppl}명`;
+  $('#ovSpentFoot').textContent = '일정에 적은 합계';
+  $('#ovRemainFoot').textContent = '사전 결제 (항공·숙박)';
+
+  /* progress: category breakdown from itinerary + fixed */
+  const wrap = $('#ovProgress');
+  wrap.innerHTML = '';
+
+  /* fixed cost lines */
+  (state.fixedCosts || []).forEach(fc => {
+    const block = document.createElement('div');
+    block.className = 'progress-block';
+    const pctOfTotal = t.total > 0 ? (fc.amount / t.total) * 100 : 0;
+    block.innerHTML = `
+      <div class="progress-head">
+        <span class="progress-name">${fc.icon} ${escapeHtml(fc.name)} <span style="color:var(--ink-faint);font-size:11px;">· 사전결제</span></span>
+        <span class="progress-amt">${fmt(fc.amount)} 원</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${Math.min(100, pctOfTotal)}%;background:var(--gold);"></div>
+      </div>
+    `;
+    wrap.appendChild(block);
+  });
+
+  /* itinerary categories */
+  const cats = getCategoryTotals();
+  Object.entries(CATEGORIES).forEach(([code, c]) => {
+    const amt = cats[code] || 0;
+    if (amt === 0) return;
+    const pctOfTotal = t.total > 0 ? (amt / t.total) * 100 : 0;
+    const block = document.createElement('div');
+    block.className = 'progress-block';
+    block.innerHTML = `
+      <div class="progress-head">
+        <span class="progress-name">${c.icon} ${c.name}</span>
+        <span class="progress-amt">${fmt(amt)} 원</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${Math.min(100, pctOfTotal)}%"></div>
+      </div>
+    `;
+    wrap.appendChild(block);
+  });
+
+  if (wrap.children.length === 0) {
+    wrap.innerHTML = '<p style="color:var(--ink-faint);font-size:13px;text-align:center;padding:20px;">일정에 활동을 추가하면 여기 자동으로 분포가 보여요</p>';
+  }
+}
+
+/* =======================================================
+   MAP
+   ======================================================= */
+function initMap() {
+  const region = getCountries()[state.country].regions[state.region];
+  map = L.map('map', {
+    center: region.center,
+    zoom: region.zoom,
+    scrollWheelZoom: true
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+  refreshMap();
+}
+
+function recenterMap(zoomTo = true) {
+  const region = getCountries()[state.country].regions[state.region];
+  if (zoomTo) map.setView(region.center, region.zoom);
+}
+
+function refreshMap() {
+  if (!map) return;
+  markerLayer.clearLayers();
+
+  /* gather places from all activities */
+  const points = [];
+  let counter = 0;
+  const places = getPlaces();
+  state.days.forEach((day, dIdx) => {
+    day.activities.forEach(act => {
+      if (!act.place) return;
+      const key = act.place.replace(/\s/g, '');
+      const coords = places[act.place] || places[key];
+      if (coords) {
+        counter++;
+        const num = counter;
+        const icon = L.divIcon({
+          html: `<div class="num-marker">${num}</div>`,
+          className: '',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+        const m = L.marker(coords, { icon });
+        const html = `
+          <div class="marker-popup">
+            <div class="day-tag">Day ${dIdx + 1}</div>
+            <h4>${act.name || act.place}</h4>
+            <div class="place-info">📍 ${act.place}</div>
+            <div class="place-info">⏰ ${act.time || '-'}</div>
+            ${act.cost ? `<div class="place-info">💰 ${fmt(act.cost)}원</div>` : ''}
+          </div>
+        `;
+        m.bindPopup(html);
+        markerLayer.addLayer(m);
+        points.push(coords);
+      }
+    });
+  });
+
+  if (points.length > 0) {
+    /* don't auto-fit; only when user clicks button */
+  }
+}
+
+function fitMarkersToView() {
+  if (!markerLayer) return;
+  const layers = markerLayer.getLayers();
+  if (layers.length === 0) {
+    alert('지도에 표시할 장소가 없습니다. 일정에 장소 이름을 입력해주세요!');
+    return;
+  }
+  const group = L.featureGroup(layers);
+  map.fitBounds(group.getBounds().pad(0.2));
+}
+
+/* =======================================================
+   REFRESH ALL
+   ======================================================= */
+function refreshAll() {
+  renderOverview();
+  renderBudget();
+}
+
+/* =======================================================
+   TABS
+   ======================================================= */
+function setupTabs() {
+  $$('.tab').forEach(tab => {
+    tab.onclick = () => {
+      $$('.tab').forEach(t => t.classList.remove('active'));
+      $$('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('#panel-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'map' && map) {
+        setTimeout(() => map.invalidateSize(), 100);
+      }
+    };
+  });
+}
+
+/* =======================================================
+   MODAL · 나라 / 지역 / 장소 추가
+   ======================================================= */
+function openModal(html) {
+  $('#modalContent').innerHTML = html;
+  $('#modal').hidden = false;
+}
+function closeModal() {
+  $('#modal').hidden = true;
+  $('#modalContent').innerHTML = '';
+}
+
+/* parse "lat, lng" or "lat lng" → [lat, lng] */
+function parseCoords(latStr, lngStr) {
+  /* allow user to paste "35.6, 139.7" into the lat field */
+  if (latStr && !lngStr) {
+    const m = String(latStr).split(/[,\s]+/).filter(Boolean);
+    if (m.length === 2) { latStr = m[0]; lngStr = m[1]; }
+  }
+  const lat = parseFloat(latStr);
+  const lng = parseFloat(lngStr);
+  if (isNaN(lat) || isNaN(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return [lat, lng];
+}
+
+function showAddCountryModal() {
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3>새 <em>나라</em> 추가</h3>
+    <p class="modal-sub">한 도시 정보만 같이 넣으면 바로 사용할 수 있어요</p>
+
+    <div class="info-box">
+      💡 <b>좌표 찾는 법</b><br>
+      구글 지도에서 도시 중심을 우클릭(모바일은 길게 터치) → 위·경도가 표시됩니다. 그대로 복붙하세요.
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">국가 이름 (한글)</label>
+      <input class="form-input" id="cc_name" placeholder="예: 인도네시아" />
+    </div>
+
+    <div class="form-row split">
+      <div>
+        <label class="form-label">국기 이모지</label>
+        <input class="form-input" id="cc_flag" placeholder="🇮🇩" />
+      </div>
+      <div>
+        <label class="form-label">통화 (선택)</label>
+        <input class="form-input" id="cc_currency" placeholder="IDR / Rp" />
+      </div>
+    </div>
+
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line-soft);">
+      <label class="form-label" style="margin-bottom:10px;">첫 도시 / 지역</label>
+      <div class="form-row triple" style="margin-bottom:6px;">
+        <input class="form-input" id="cc_region" placeholder="도시 이름 (예: 발리)" />
+        <input class="form-input" id="cc_lat" placeholder="위도" />
+        <input class="form-input" id="cc_lng" placeholder="경도" />
+      </div>
+      <div class="form-hint">위도 칸에 <code>-8.4095, 115.1889</code> 처럼 한 번에 붙여넣어도 OK</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn primary" onclick="submitAddCountry()">추가하기</button>
+    </div>
+  `);
+  setTimeout(() => $('#cc_name').focus(), 50);
+}
+
+function submitAddCountry() {
+  const name = $('#cc_name').value.trim();
+  const flag = $('#cc_flag').value.trim() || '🏳️';
+  const currency = $('#cc_currency').value.trim();
+  const regionName = $('#cc_region').value.trim();
+  const coords = parseCoords($('#cc_lat').value.trim(), $('#cc_lng').value.trim());
+
+  if (!name) { alert('나라 이름을 입력해주세요'); return; }
+  if (!regionName) { alert('도시 이름을 입력해주세요'); return; }
+  if (!coords) { alert('올바른 위도/경도를 입력해주세요\n예: 35.6762, 139.6503'); return; }
+
+  /* generate codes */
+  const all = getCountries();
+  let cCode = name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3) || 'c';
+  let i = 0;
+  while (all[cCode] || state.customCountries[cCode]) {
+    i++; cCode = (name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3) || 'c') + i;
+  }
+  const rCode = 'r' + Date.now();
+
+  state.customCountries[cCode] = {
+    name, flag,
+    currency: currency.split(/\s+/)[0] || '',
+    symbol: currency.split(/\s+/).slice(1).join(' ') || currency,
+    regions: { [rCode]: { name: regionName, center: coords, zoom: 12 } }
+  };
+  state.country = cCode;
+  state.region = rCode;
+  saveState();
+
+  buildCountrySelector();
+  $('#countrySel').value = state.country;
+  $('#regionSel').value = state.region;
+  updateMeta();
+  if (map) { recenterMap(true); refreshMap(); }
+  closeModal();
+}
+
+function showAddRegionModal() {
+  const country = getCountries()[state.country];
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3>새 <em>지역</em> 추가</h3>
+    <p class="modal-sub">${escapeHtml(country.flag)} ${escapeHtml(country.name)}에 도시 추가</p>
+
+    <div class="info-box">
+      💡 구글 지도에서 도시 중심을 우클릭하면 좌표가 나옵니다.
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">도시 / 지역 이름</label>
+      <input class="form-input" id="cr_name" placeholder="예: 나고야" />
+    </div>
+    <div class="form-row split">
+      <div>
+        <label class="form-label">위도 (Latitude)</label>
+        <input class="form-input" id="cr_lat" placeholder="35.1815" />
+      </div>
+      <div>
+        <label class="form-label">경도 (Longitude)</label>
+        <input class="form-input" id="cr_lng" placeholder="136.9066" />
+      </div>
+    </div>
+    <div class="form-hint">위도 칸에 <code>35.1815, 136.9066</code>처럼 한 번에 붙여넣어도 OK</div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn primary" onclick="submitAddRegion()">추가하기</button>
+    </div>
+  `);
+  setTimeout(() => $('#cr_name').focus(), 50);
+}
+
+function submitAddRegion() {
+  const name = $('#cr_name').value.trim();
+  const coords = parseCoords($('#cr_lat').value.trim(), $('#cr_lng').value.trim());
+  if (!name) { alert('도시 이름을 입력해주세요'); return; }
+  if (!coords) { alert('올바른 위도/경도를 입력해주세요'); return; }
+
+  const code = state.country;
+  if (!state.customCountries[code]) {
+    /* built-in country → store overlay */
+    state.customCountries[code] = { regions: {} };
+  }
+  if (!state.customCountries[code].regions) state.customCountries[code].regions = {};
+
+  const rCode = 'r' + Date.now();
+  state.customCountries[code].regions[rCode] = { name, center: coords, zoom: 12 };
+  state.region = rCode;
+  saveState();
+
+  buildRegionSelector();
+  $('#regionSel').value = state.region;
+  updateMeta();
+  if (map) { recenterMap(true); refreshMap(); }
+  closeModal();
+}
+
+function showManagePlacesModal() {
+  const places = state.customPlaces || {};
+  const items = Object.entries(places);
+  const country = getCountries()[state.country];
+  const region = country.regions[state.region];
+
+  const listHtml = items.map(([name, c]) => `
+    <div class="place-item">
+      <div>
+        <span class="place-name">${escapeHtml(name)}</span>
+        <span class="place-coords">${c[0].toFixed(4)}, ${c[1].toFixed(4)}</span>
+      </div>
+      <button onclick="deletePlace('${escapeHtml(name).replace(/'/g, "\\'")}')" title="삭제">×</button>
+    </div>
+  `).join('');
+
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3>장소 <em>관리</em></h3>
+    <p class="modal-sub">일정에 입력한 장소가 자동으로 지도에 뜨려면 좌표가 필요해요</p>
+
+    <div class="info-box">
+      💡 <b>${escapeHtml(country.flag)} ${escapeHtml(region.name)}</b>의 명소를 등록하면, 일정에 그 이름을 입력했을 때 자동으로 지도에 표시됩니다.<br>
+      구글 지도에서 장소 우클릭 → 좌표 복사
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">장소 이름</label>
+      <input class="form-input" id="cp_name" placeholder="예: 도쿄돔, 신주쿠교엔" />
+    </div>
+    <div class="form-row split">
+      <div>
+        <label class="form-label">위도</label>
+        <input class="form-input" id="cp_lat" placeholder="35.7056" />
+      </div>
+      <div>
+        <label class="form-label">경도</label>
+        <input class="form-input" id="cp_lng" placeholder="139.7519" />
+      </div>
+    </div>
+    <div class="form-hint" style="margin-bottom:18px;">위도 칸에 <code>35.7056, 139.7519</code>처럼 같이 붙여넣어도 OK</div>
+
+    <button class="btn primary" style="width:100%;" onclick="submitAddPlace()">+ 장소 추가</button>
+
+    <div style="margin-top:24px;">
+      <label class="form-label">내가 추가한 장소 (${items.length})</label>
+      <div class="place-list">${listHtml}</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">닫기</button>
+    </div>
+  `);
+  setTimeout(() => $('#cp_name').focus(), 50);
+}
+
+function submitAddPlace() {
+  const name = $('#cp_name').value.trim();
+  const coords = parseCoords($('#cp_lat').value.trim(), $('#cp_lng').value.trim());
+  if (!name) { alert('장소 이름을 입력해주세요'); return; }
+  if (!coords) { alert('올바른 위도/경도를 입력해주세요'); return; }
+
+  state.customPlaces[name] = coords;
+  saveState();
+  refreshMap();
+  showManagePlacesModal(); /* refresh list */
+}
+
+function deletePlace(name) {
+  if (!confirm(`'${name}' 장소를 삭제할까요?`)) return;
+  delete state.customPlaces[name];
+  saveState();
+  refreshMap();
+  showManagePlacesModal();
+}
+
+/* =======================================================
+   INIT
+   ======================================================= */
+async function init() {
+  /* 1. URL hash takes priority — viewing someone's shared plan */
+  const fromUrl = readShareFromUrl();
+  let viewingShared = false;
+
+  if (fromUrl) {
+    state = Object.assign(defaultState(), fromUrl);
+    viewingShared = true;
+  } else {
+    /* 2. Otherwise restore from local storage */
+    const saved = await loadState();
+    if (saved) state = Object.assign(defaultState(), saved);
+  }
+
+  /* migration · 옛 데이터 형식 정리 */
+  /* a) state.budget(구) → state.fixedCosts(신): 항공/숙박만 보존, 나머지는 일정 합산으로 대체 */
+  if (state.budget && Array.isArray(state.budget) && (!state.fixedCosts || state.fixedCosts.length === 0)) {
+    state.fixedCosts = state.budget
+      .filter(b => /항공|숙박|호텔|보험|비행|airfare|flight|hotel/i.test(b.name || ''))
+      .map(b => ({ icon: b.icon || '✦', name: b.name, amount: b.planned || b.actual || 0 }));
+    if (state.fixedCosts.length === 0) {
+      state.fixedCosts = defaultState().fixedCosts;
+    }
+    delete state.budget;
+  }
+  /* b) 활동에 카테고리 없으면 기본값 'other' */
+  state.days.forEach(d => d.activities.forEach(a => {
+    if (!a.category || !CATEGORIES[a.category]) a.category = 'other';
+  }));
+  if (!state.fixedCosts) state.fixedCosts = [];
+
+  /* hydrate hero fields */
+  $('#tripTitle').value = state.title;
+  $('#dateRange').value = state.dates;
+  $('#people').value    = state.people;
+  $('#tripNotes').value = state.notes;
+
+  /* listeners */
+  $('#tripTitle').addEventListener('input', e => { state.title = e.target.value; saveState(); });
+  $('#dateRange').addEventListener('input', e => { state.dates = e.target.value; saveState(); });
+  $('#people').addEventListener('input', e => {
+    state.people = parseInt(e.target.value) || 1;
+    updateMeta(); refreshAll(); saveState();
+  });
+  $('#tripNotes').addEventListener('input', e => { state.notes = e.target.value; saveState(); });
+
+  buildCountrySelector();
+  $('#countrySel').addEventListener('change', e => {
+    state.country = e.target.value;
+    buildRegionSelector();
+    state.region = $('#regionSel').value;
+    updateMeta();
+    recenterMap(true);
+    refreshMap();
+    saveState();
+  });
+  $('#regionSel').addEventListener('change', e => {
+    state.region = e.target.value;
+    updateMeta();
+    recenterMap(true);
+    refreshMap();
+    saveState();
+  });
+
+  $('#addFixedBtn').addEventListener('click', () => {
+    if (!state.fixedCosts) state.fixedCosts = [];
+    state.fixedCosts.push({ icon: '✦', name: '새 항목', amount: 0 });
+    renderBudget(); refreshAll(); saveState();
+  });
+
+  $('#fitMarkers').addEventListener('click', fitMarkersToView);
+  $('#recenter').addEventListener('click', () => recenterMap(true));
+
+  /* modal triggers */
+  $('#addCountryBtn').addEventListener('click', showAddCountryModal);
+  $('#addRegionBtn').addEventListener('click', showAddRegionModal);
+  $('#managePlacesBtn').addEventListener('click', showManagePlacesModal);
+  $('#shareBtn').addEventListener('click', showShareModal);
+
+  /* shared banner buttons */
+  $('#saveSharedBtn').addEventListener('click', () => {
+    saveState();
+    hideSharedBanner();
+    toast('✿ 내 플랜으로 저장됐어요');
+  });
+  $('#dismissSharedBtn').addEventListener('click', () => {
+    $('#sharedBanner').hidden = true;
+  });
+
+  /* close modal on backdrop click */
+  $('#modal').addEventListener('click', e => {
+    if (e.target.id === 'modal') closeModal();
+  });
+  /* close modal on Escape */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('#modal').hidden) closeModal();
+  });
+
+  setupTabs();
+  updateMeta();
+  renderItinerary();
+  renderBudget();
+  renderOverview();
+
+  /* show shared banner if loaded from URL */
+  if (viewingShared) showSharedBanner();
+
+  /* init map after a tick so layout is settled */
+  setTimeout(initMap, 100);
+}
+
+init();
+</script>
+
+</body>
+</html>
